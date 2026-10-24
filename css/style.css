@@ -243,9 +243,13 @@ body {
   display: flex;
   flex-direction: column;
   min-height: 100vh;
+  min-height: 100dvh;
   max-width: 680px;
   margin: 0 auto;
-  padding: 0 16px 80px 16px;
+  padding-top: max(8px, env(safe-area-inset-top, 0px));
+  padding-bottom: max(80px, calc(env(safe-area-inset-bottom, 0px) + 60px));
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
 }
 
 /* App Header */
@@ -742,7 +746,7 @@ body {
    ========================================================================== */
 .toast-notice {
   position: fixed;
-  bottom: 24px;
+  bottom: max(24px, calc(env(safe-area-inset-bottom, 0px) + 16px));
   left: 50%;
   transform: translateX(-50%) translateY(80px);
   max-width: 92vw;

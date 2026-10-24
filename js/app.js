@@ -86,7 +86,7 @@ function escapeHtml(str) {
   });
 }
 
-// Classic Loved Bottom Pill Toast Notification
+// Classic Loved Bottom Pill Toast Notification with Haptic Vibration
 function showToast(content, type = 'info') {
   const toast = document.getElementById('app-toast');
   if (!toast) return;
@@ -114,6 +114,28 @@ function showToast(content, type = 'info') {
     icon = '❌ ';
   }
 
+  // Haptic feedback vibration for enhanced UX:
+  // Warnings (table empty, camera paused, no data to export, flashlight notice) trigger distinct tactile pulse
+  const isWarningNotice = (
+    type === 'warning' ||
+    type === 'duplicate' ||
+    type === 'danger' ||
+    type === 'error' ||
+    message.includes('فارغ') ||
+    message.includes('إيقاف') ||
+    message.includes('لا توجد') ||
+    message.includes('غير مدعوم') ||
+    message.includes('تعذر') ||
+    message.includes('حظر') ||
+    message.includes('يجب')
+  );
+
+  if (isWarningNotice) {
+    triggerVibrate([70, 50, 70]); // Double tactile warning pulse
+  } else if (type === 'success') {
+    triggerVibrate(40); // Soft confirmation tap
+  }
+
   toast.className = `toast-notice ${type} show`;
   toast.innerHTML = `<span>${icon}${escapeHtml(message)}</span>`;
 
@@ -134,7 +156,7 @@ document.addEventListener('DOMContentLoaded', () => {
 // PWA Service Worker Registration
 function registerServiceWorker() {
   if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('./sw.js?v=20261024.4', { scope: '/' })
+    navigator.serviceWorker.register('./sw.js?v=20261024.5', { scope: '/' })
       .then(reg => {
         console.log('ServiceWorker registered successfully:', reg.scope);
         if (reg.waiting) {
@@ -155,12 +177,32 @@ function registerServiceWorker() {
   }
 }
 
-// Theme handling (Light / Dark)
+// Theme handling (Automatic Browser Detection + Dynamic Sync + Manual Toggle)
 function initTheme() {
-  const savedTheme = localStorage.getItem('pwa_scan_theme') ||
-    (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+  const mediaQuery = window.matchMedia ? window.matchMedia('(prefers-color-scheme: dark)') : null;
+  const savedTheme = localStorage.getItem('pwa_scan_theme');
 
-  applyTheme(savedTheme);
+  // Automatically detect based on browser preference by default
+  const browserTheme = (mediaQuery && mediaQuery.matches) ? 'dark' : 'light';
+  const initialTheme = savedTheme || browserTheme;
+
+  applyTheme(initialTheme);
+
+  // Auto-sync with browser/operating system theme changes
+  if (mediaQuery) {
+    const handleBrowserThemeChange = (e) => {
+      // If user has not explicitly locked a manual preference, follow browser dynamically
+      if (!localStorage.getItem('pwa_scan_theme_manual')) {
+        applyTheme(e.matches ? 'dark' : 'light');
+      }
+    };
+
+    if (typeof mediaQuery.addEventListener === 'function') {
+      mediaQuery.addEventListener('change', handleBrowserThemeChange);
+    } else if (typeof mediaQuery.addListener === 'function') {
+      mediaQuery.addListener(handleBrowserThemeChange);
+    }
+  }
 
   const themeBtn = document.getElementById('btn-toggle-theme');
   if (themeBtn) {
@@ -169,12 +211,28 @@ function initTheme() {
       const next = current === 'dark' ? 'light' : 'dark';
       applyTheme(next);
       localStorage.setItem('pwa_scan_theme', next);
+      localStorage.setItem('pwa_scan_theme_manual', 'true');
+      triggerVibrate(35); // Soft tactile feedback on theme toggle
     });
   }
 }
 
 function applyTheme(theme) {
   document.documentElement.setAttribute('data-theme', theme);
+
+  // Keep mobile Status Bar and Navigation Bar background color identical to page background
+  const bgColor = theme === 'dark' ? '#0b1120' : '#f8fafc';
+  const metaColor = document.getElementById('meta-theme-color');
+  if (metaColor) {
+    metaColor.setAttribute('content', bgColor);
+  }
+
+  // Update Apple status bar meta
+  const appleMeta = document.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]');
+  if (appleMeta) {
+    appleMeta.setAttribute('content', theme === 'dark' ? 'black-translucent' : 'default');
+  }
+
   const icon = document.getElementById('theme-icon');
   if (icon) {
     // Show sun in dark mode, moon in light mode
@@ -326,8 +384,7 @@ function handleDecodedData(decodedText) {
   const studentData = parseStudentQRData(decodedText);
 
   if (!studentData || !studentData.fullName || isNaN(studentData.score)) {
-    triggerVibrate([80, 50, 80]); // Triple error buzz (no audio sound)
-    showToast('⚠️ الرمز لا يحتوي على بيانات صالحة (الاسم، القسم، العلامة)', 'duplicate');
+    showToast('الرمز لا يحتوي على بيانات صالحة (الاسم، القسم، العلامة)', 'warning');
     return;
   }
 
@@ -513,7 +570,7 @@ function requestCameraAccess(isAutoStart = false) {
   if (statusText) statusText.innerText = 'جاري التحقق من إذن الكاميرا...';
 
   if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-    showToast('متصفحك لا يدعم الوصول المباشر للكاميرا', 'duplicate');
+    showToast('متصفحك لا يدعم الوصول المباشر للكاميرا', 'warning');
     return;
   }
 
@@ -534,7 +591,7 @@ function requestCameraAccess(isAutoStart = false) {
         if (promptEl) promptEl.style.display = 'none';
         if (blockedEl) blockedEl.style.display = 'flex';
         if (statusText) statusText.innerText = 'تم حظر إذن الكاميرا';
-        showToast('يرجى تفعيل صلاحية الكاميرا من إعدادات المتصفح', 'duplicate');
+        showToast('يرجى تفعيل صلاحية الكاميرا من إعدادات المتصفح', 'warning');
       } else {
         // If auto-start failed, show the initial friendly prompt
         if (promptEl) promptEl.style.display = 'flex';
@@ -562,7 +619,7 @@ function initScanner() {
       startScanning(currentCameraId);
     } else {
       console.warn('No cameras found.');
-      showToast('لم يتم العثور على كاميرا في هذا الجهاز', 'duplicate');
+      showToast('لم يتم العثور على كاميرا في هذا الجهاز', 'warning');
     }
   }).catch(err => {
     console.warn('Camera detection error:', err);
@@ -612,7 +669,7 @@ function toggleCameraPauseResume() {
       if (laser) laser.style.display = 'none';
       if (statusText) statusText.innerText = 'الكاميرا متوقفة مؤقتاً';
       updateCameraToggleIcon(false);
-      showToast('تم إيقاف الكاميرا مؤقتاً', 'info');
+      showToast('تم إيقاف الكاميرا مؤقتاً', 'warning');
     }).catch(console.error);
   } else if (!isScanning) {
     if (currentCameraId) {
@@ -638,7 +695,7 @@ function updateCameraToggleIcon(active) {
 
 function switchCamera() {
   if (!html5QrCode || availableCameras.length <= 1) {
-    showToast('لا توجد كاميرا إضافية للتبديل إليها', 'info');
+    showToast('لا توجد كاميرا إضافية للتبديل إليها', 'warning');
     return;
   }
 
@@ -660,7 +717,7 @@ function switchCamera() {
 function toggleTorch() {
   const torchBtn = document.getElementById('btn-torch');
   if (!html5QrCode || !isScanning) {
-    showToast('يجب تشغيل الكاميرا أولاً لاستخدام الفلاش', 'info');
+    showToast('يجب تشغيل الكاميرا أولاً لاستخدام الفلاش', 'warning');
     return;
   }
 
@@ -672,7 +729,7 @@ function toggleTorch() {
     const capabilities = track.getCapabilities ? track.getCapabilities() : {};
 
     if (!capabilities.torch) {
-      showToast('الفلاش غير مدعوم على هذه الكاميرا', 'info');
+      showToast('الفلاش غير مدعوم على هذه الكاميرا', 'warning');
       return;
     }
 
@@ -685,7 +742,7 @@ function toggleTorch() {
       }
       showToast(isTorchOn ? 'تم تشغيل الفلاش 💡' : 'تم إيقاف الفلاش', 'info');
     }).catch(err => {
-      showToast('تعذر تغيير حالة الفلاش', 'info');
+      showToast('تعذر تغيير حالة الفلاش', 'warning');
     });
   } catch (e) {
     console.warn('Torch toggle error:', e);
@@ -850,7 +907,7 @@ function deleteStudent(id) {
 
 function clearAllStudents() {
   if (scannedStudents.length === 0) {
-    showToast('الجدول فارغ بالفعل', 'info');
+    showToast('الجدول فارغ بالفعل - لا توجد بيانات لمسحها', 'warning');
     return;
   }
 
@@ -872,7 +929,7 @@ function clearAllStudents() {
 // Export to CSV with Arabic UTF-8 BOM
 function exportCSV() {
   if (scannedStudents.length === 0) {
-    showToast('لا توجد نتائج لتصديرها بعد', 'duplicate');
+    showToast('لا توجد بيانات أو نتائج لتصديرها بعد', 'warning');
     return;
   }
 
@@ -903,12 +960,12 @@ function exportCSV() {
 // Export to XLSX (Excel) with a separate Sheet for each class
 function exportXLSX() {
   if (typeof XLSX === 'undefined') {
-    showToast('مكتبة Excel غير جاهزة', 'duplicate');
+    showToast('مكتبة Excel غير جاهزة', 'warning');
     return;
   }
 
   if (scannedStudents.length === 0) {
-    showToast('لا توجد نتائج لتصديرها بعد', 'duplicate');
+    showToast('لا توجد بيانات أو نتائج لتصديرها بعد', 'warning');
     return;
   }
 

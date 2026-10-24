@@ -3,19 +3,40 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <meta name="theme-color" content="#059669">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    
+    <!-- Status Bar & Navigation Bar Colors (Synchronized with App Background) -->
+    <meta name="theme-color" id="meta-theme-color" content="#f8fafc">
+    <meta name="theme-color" media="(prefers-color-scheme: light)" content="#f8fafc">
+    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0b1120">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+
     <meta name="description" content="تطبيق ماسح نقاط الفروض والاختبارات بدون إنترنت عبر الهاتف واللوحي">
     <title>ScanSheet</title>
 
+    <!-- Immediate Browser Theme Detection (Zero-Flash Auto Theme) -->
+    <script>
+      (function() {
+        try {
+          var saved = localStorage.getItem('pwa_scan_theme');
+          var isDark = saved ? (saved === 'dark') : (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+          var activeTheme = isDark ? 'dark' : 'light';
+          document.documentElement.setAttribute('data-theme', activeTheme);
+          var meta = document.getElementById('meta-theme-color');
+          if (meta) meta.setAttribute('content', isDark ? '#0b1120' : '#f8fafc');
+        } catch (e) {}
+      })();
+    </script>
+
     <!-- PWA Manifest & App Icons -->
-    <link rel="manifest" href="manifest.json?v=20261024.4">
-    <link rel="icon" type="image/svg+xml" href="icons/icon.svg?v=20261024.4">
-    <link rel="apple-touch-icon" href="icons/icon.svg?v=20261024.4">
+    <link rel="manifest" href="manifest.json?v=20261024.5">
+    <link rel="icon" type="image/svg+xml" href="icons/icon.svg?v=20261024.5">
+    <link rel="apple-touch-icon" href="icons/icon.svg?v=20261024.5">
 
     <!-- Stylesheets (Separated & Offline-Ready) -->
-    <link rel="stylesheet" href="css/bootstrap.rtl.min.css?v=20261024.4">
-    <link rel="stylesheet" href="css/style.css?v=20261024.4">
+    <link rel="stylesheet" href="css/bootstrap.rtl.min.css?v=20261024.5">
+    <link rel="stylesheet" href="css/style.css?v=20261024.5">
 </head>
 
 <body>
@@ -429,11 +450,11 @@
     <div id="app-toast" class="toast-notice"></div>
 
     <!-- المكاتب المساعدة محلياً للأوفلاين (Local Vendored Dependencies) -->
-    <script src="js/html5-qrcode.min.js?v=20261024.4"></script>
-    <script src="js/xlsx.full.min.js?v=20261024.4"></script>
+    <script src="js/html5-qrcode.min.js?v=20261024.5"></script>
+    <script src="js/xlsx.full.min.js?v=20261024.5"></script>
 
     <!-- كود التطبيق الأساسي المنفصل -->
-    <script src="js/app.js?v=20261024.4"></script>
+    <script src="js/app.js?v=20261024.5"></script>
 
 </body>
 

@@ -1,7 +1,6 @@
-const CACHE_NAME = 'scan-sheet-pwa-v7';
+const CACHE_NAME = 'scan-sheet-pwa-v8';
 const ASSETS_TO_CACHE = [
   './',
-  './index.html',
   './manifest.json',
   './css/bootstrap.rtl.min.css',
   './css/style.css',
@@ -11,30 +10,36 @@ const ASSETS_TO_CACHE = [
   './icons/icon.svg'
 ];
 
-// Install: Cache all core assets with redirect-following support
+// Message listener for immediate activation
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
+});
+
+// Install: Cache all core assets and mirror root shell across all path variants
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then(async (cache) => {
-      console.log('[ServiceWorker] Caching app shell');
+      console.log('[ServiceWorker] Caching app shell v8');
       await Promise.all(
         ASSETS_TO_CACHE.map(async (url) => {
           try {
-            const response = await fetch(url, { redirect: 'follow' });
-            if (response && response.ok) {
-              await cache.put(url, response);
+            const response = await fetch(url);
+            if (response && (response.ok || response.type === 'basic')) {
+              await cache.put(url, response.clone());
+              // Mirror the root document to all possible navigation paths
+              if (url === './' || url === '/') {
+                await cache.put('/', response.clone());
+                await cache.put('/index.html', response.clone());
+                await cache.put('./index.html', response.clone());
+              }
             }
           } catch (err) {
             console.warn('[ServiceWorker] Could not pre-cache:', url, err);
           }
         })
       );
-
-      // Ensure root '/' and './index.html' are always cached and mirrored
-      const indexResp = (await cache.match('./index.html')) || (await cache.match('./'));
-      if (indexResp) {
-        await cache.put('./', indexResp.clone());
-        await cache.put('./index.html', indexResp.clone());
-      }
     }).then(() => self.skipWaiting())
   );
 });
@@ -55,55 +60,100 @@ self.addEventListener('activate', (event) => {
   );
 });
 
-// Fetch: Offline-First Navigation Strategy
+// Fetch: Bulletproof Navigation & Offline Strategy
 self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return;
 
   const url = new URL(event.request.url);
 
-  // 1. Navigation requests (PWA home screen launch, address bar navigation)
-  if (event.request.mode === 'navigate' || url.pathname.endsWith('index.html') || url.pathname.endsWith('/')) {
+  // 1. Navigation requests (PWA home screen launch, address bar /index.html or /)
+  const isNavigation = event.request.mode === 'navigate' ||
+                       url.pathname === '/' ||
+                       url.pathname === '/index.html' ||
+                       url.pathname.endsWith('/index.html') ||
+                       (event.request.headers.get('accept') && event.request.headers.get('accept').includes('text/html'));
+
+  if (isNavigation) {
     event.respondWith(
-      caches.match(event.request, { ignoreSearch: true })
-        .then((cached) => {
+      (async () => {
+        try {
+          const cache = await caches.open(CACHE_NAME);
+
+          // 1. Check cache first for instant offline startup
+          let cached = await cache.match(event.request, { ignoreSearch: true });
           if (cached) return cached;
-          return caches.match('./index.html', { ignoreSearch: true });
-        })
-        .then((cached) => {
+
+          // Check canonical HTML shell keys
+          cached = (await cache.match('/')) ||
+                   (await cache.match('/index.html')) ||
+                   (await cache.match('./')) ||
+                   (await cache.match('./index.html'));
           if (cached) return cached;
-          return caches.match('./', { ignoreSearch: true });
-        })
-        .then((cached) => {
-          if (cached) return cached;
-          return fetch(event.request, { redirect: 'follow' });
-        })
-        .catch(() => {
-          return caches.match('./index.html', { ignoreSearch: true }) || caches.match('./', { ignoreSearch: true });
-        })
+
+          // 2. Fetch from network (never pass options that conflict with navigate mode)
+          try {
+            const networkResponse = await fetch(event.request);
+            if (networkResponse && (networkResponse.status === 200 || networkResponse.type === 'basic')) {
+              cache.put(event.request, networkResponse.clone()).catch(() => {});
+              cache.put('/', networkResponse.clone()).catch(() => {});
+              cache.put('/index.html', networkResponse.clone()).catch(() => {});
+              return networkResponse;
+            }
+            if (networkResponse) {
+              return networkResponse;
+            }
+          } catch (netErr) {
+            console.warn('[ServiceWorker] Network navigation failed, falling back to cache:', netErr);
+          }
+
+          // 3. Fallback to any cached HTML
+          const fallback = (await caches.match('/', { ignoreSearch: true })) ||
+                           (await caches.match('/index.html', { ignoreSearch: true })) ||
+                           (await caches.match('./', { ignoreSearch: true })) ||
+                           (await caches.match('./index.html', { ignoreSearch: true }));
+          if (fallback) return fallback;
+
+          // 4. Safe recovery response (guarantees event.respondWith never resolves to undefined or ERR_FAILED)
+          return new Response(
+            '<!DOCTYPE html><html lang="ar" dir="rtl"><head><meta charset="UTF-8"><title>ScanSheet</title><meta http-equiv="refresh" content="0; url=/"></head><body><script>location.replace("/");</script></body></html>',
+            {
+              status: 200,
+              headers: { 'Content-Type': 'text/html; charset=utf-8' }
+            }
+          );
+        } catch (err) {
+          console.error('[ServiceWorker] Navigation handler exception:', err);
+          return new Response(
+            '<!DOCTYPE html><html lang="ar" dir="rtl"><head><meta charset="UTF-8"><meta http-equiv="refresh" content="0; url=/"></head><body><script>location.replace("/");</script></body></html>',
+            {
+              status: 200,
+              headers: { 'Content-Type': 'text/html; charset=utf-8' }
+            }
+          );
+        }
+      })()
     );
     return;
   }
 
-  // 2. Static Assets (CSS, JS, SVG, Fonts)
+  // 2. Static Assets (CSS, JS, SVG, Fonts, Manifest)
   event.respondWith(
-    caches.match(event.request, { ignoreSearch: true }).then((cachedResponse) => {
-      if (cachedResponse) {
-        return cachedResponse;
-      }
-      return fetch(event.request).then((networkResponse) => {
-        if (networkResponse && networkResponse.status === 200 && networkResponse.type === 'basic') {
-          const responseToCache = networkResponse.clone();
-          caches.open(CACHE_NAME).then((cache) => {
-            cache.put(event.request, responseToCache);
-          });
+    (async () => {
+      try {
+        const cache = await caches.open(CACHE_NAME);
+        const cached = await cache.match(event.request, { ignoreSearch: true });
+        if (cached) return cached;
+
+        const networkResponse = await fetch(event.request);
+        if (networkResponse && networkResponse.status === 200) {
+          cache.put(event.request, networkResponse.clone()).catch(() => {});
         }
         return networkResponse;
-      }).catch((err) => {
-        if (event.request.mode === 'navigate' || url.pathname.endsWith('.html')) {
-          return caches.match('./index.html', { ignoreSearch: true });
-        }
+      } catch (err) {
+        const fallback = await caches.match(event.request, { ignoreSearch: true });
+        if (fallback) return fallback;
         throw err;
-      });
-    })
+      }
+    })()
   );
 });

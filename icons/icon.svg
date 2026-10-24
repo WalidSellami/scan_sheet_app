@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#059669" />
+      <stop offset="100%" stop-color="#047857" />
+    </linearGradient>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="8" stdDeviation="12" flood-color="#000000" flood-opacity="0.25"/>
+    </filter>
+  </defs>
+  <rect width="512" height="512" rx="112" fill="url(#bg)" />
+  <!-- Scanner Target Corners -->
+  <g stroke="#ffffff" stroke-width="20" stroke-linecap="round" fill="none">
+    <path d="M 120 180 L 120 130 A 20 20 0 0 1 140 110 L 190 110" />
+    <path d="M 392 180 L 392 130 A 20 20 0 0 0 372 110 L 322 110" />
+    <path d="M 120 332 L 120 382 A 20 20 0 0 0 140 402 L 190 402" />
+    <path d="M 392 332 L 392 382 A 20 20 0 0 1 372 402 L 322 402" />
+  </g>
+  <!-- Document & QR Icon in center -->
+  <rect x="186" y="176" width="140" height="160" rx="16" fill="#ffffff" filter="url(#shadow)" />
+  <!-- Sheet Lines -->
+  <rect x="210" y="210" width="92" height="12" rx="6" fill="#10b981" />
+  <rect x="210" y="236" width="70" height="10" rx="5" fill="#9ca3af" />
+  <rect x="210" y="258" width="80" height="10" rx="5" fill="#9ca3af" />
+  <!-- Checkmark badge -->
+  <circle cx="286" cy="306" r="24" fill="#10b981" />
+  <path d="M 276 306 L 283 313 L 297 299" stroke="#ffffff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  <!-- Laser Beam -->
+  <line x1="100" y1="256" x2="412" y2="256" stroke="#34d399" stroke-width="6" stroke-linecap="round" opacity="0.85" />
+</svg>

@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl" data-theme="light">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#059669">
+    <meta name="description" content="تطبيق ماسح نقاط الفروض والاختبارات بدون إنترنت عبر الهاتف واللوحي">
+    <title>ماسح النقاط الآلي</title>
+
+    <!-- PWA Manifest & App Icons -->
+    <link rel="manifest" href="manifest.json?v=20261023.2">
+    <link rel="icon" type="image/svg+xml" href="icons/icon.svg?v=20261023.2">
+    <link rel="apple-touch-icon" href="icons/icon.svg?v=20261023.2">
+
+    <!-- Stylesheets (Separated & Offline-Ready) -->
+    <link rel="stylesheet" href="css/bootstrap.rtl.min.css?v=20261023.2">
+    <link rel="stylesheet" href="css/style.css?v=20261023.2">
+</head>
+
+<body>
+
+    <!-- ==========================================================================
+         1. شاشة حظر أجهزة الحاسوب (Desktop Guard - Visible on screens > 1024px)
+         ========================================================================== -->
+    <div id="desktop-guard-container">
+        <div class="desktop-guard-card">
+            <div class="guard-icon-wrap">
+                <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+                    <line x1="8" y1="21" x2="16" y2="21"></line>
+                    <line x1="12" y1="17" x2="12" y2="21"></line>
+                    <line x1="2" y1="3" x2="22" y2="17" stroke="#ef4444" stroke-width="2.5"></line>
+                </svg>
+            </div>
+
+            <div class="guard-status-badge">
+                <span class="guard-badge-dot"></span>
+                غير مدعوم على أجهزة الحاسوب
+            </div>
+
+            <h2 class="guard-title">التطبيق غير مدعوم على الحاسوب</h2>
+
+            <p class="guard-desc">
+                تم تصميم وتطوير ماسح النقاط ليعمل حصرياً عبر كاميرا الهواتف الذكية أو الأجهزة اللوحية (Tablet / iPad)
+                لسرعة وسهولة مسح شاشات التلاميذ داخل المخبر.
+            </p>
+
+            <div class="guard-supported-devices">
+                <div class="guard-device-item">
+                    <div class="guard-device-icon">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect>
+                            <line x1="12" y1="18" x2="12.01" y2="18"></line>
+                        </svg>
+                    </div>
+                    <span>الهواتف الذكية (Mobile)</span>
+                </div>
+                <div class="guard-device-item">
+                    <div class="guard-device-icon">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="4" y="2" width="16" height="20" rx="2" ry="2"></rect>
+                            <line x1="12" y1="18" x2="12.01" y2="18"></line>
+                        </svg>
+                    </div>
+                    <span>الأجهزة اللوحية (Tablet / iPad)</span>
+                </div>
+            </div>
+
+            <p class="guard-hint-text">
+                يرجى فتح الرابط من خلال هاتفك الذكي أو جهاز التابلت للبدء في الاستخدام.
+            </p>
+        </div>
+    </div>
+
+    <!-- ==========================================================================
+         2. واجهة التطبيق الأساسية (Mobile & Tablet App Container)
+         ========================================================================== -->
+    <div id="mobile-app-container">
+
+        <!-- رأس التطبيق (Header) -->
+        <header class="app-header">
+            <div class="app-brand">
+                <img src="icons/icon.svg?v=20261022" alt="شعار الماسح" class="app-logo">
+                <div class="app-title-group">
+                    <h1>ماسح النقاط الآلي</h1>
+                    <p>رصد فوري بدون إنترنت</p>
+                </div>
+            </div>
+
+            <div class="header-actions">
+                <!-- زر إضافة يدوية في حال تعذر المسح -->
+                <button class="btn-icon" data-bs-toggle="modal" data-bs-target="#manualAddModal" title="إدخال يدوي"
+                    id="btn-open-manual">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="12" y1="5" x2="12" y2="19"></line>
+                        <line x1="5" y1="12" x2="19" y2="12"></line>
+                    </svg>
+                </button>
+
+                <!-- زر تبديل الوضع الليلي / النهاري -->
+                <button class="btn-icon" id="btn-toggle-theme" title="تبديل المظهر">
+                    <svg id="theme-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                    </svg>
+                </button>
+
+                <!-- زر مسح الكل -->
+                <button class="btn-icon" id="btn-clear-all" title="مسح كافة البيانات" style="color: #ef4444;">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="3 6 5 6 21 6"></polyline>
+                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                    </svg>
+                </button>
+            </div>
+        </header>
+
+        <!-- نافذة مسح الكاميرا (Scanner Viewport) -->
+        <section class="scanner-card">
+            <div class="scanner-viewport-wrap">
+                <!-- طلب إذن تشغيل الكاميرا -->
+                <div id="camera-permission-prompt" class="scanner-permission-overlay">
+                    <div class="permission-icon-pulse">
+                        <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z">
+                            </path>
+                            <circle cx="12" cy="13" r="4"></circle>
+                        </svg>
+                    </div>
+                    <h4 class="permission-title">السماح بتشغيل الكاميرا</h4>
+                    <p class="permission-subtitle">
+                        يتطلب التطبيق الإذن لتشغيل الكاميرا لمسح رموز الفروض وشاشات التلاميذ داخل المخبر.
+                    </p>
+                    <button type="button" id="btn-request-camera" class="btn-activate-camera">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                        </svg>
+                        <span>تشغيل الكاميرا والبدء</span>
+                    </button>
+                </div>
+
+                <!-- رسالة حظر الكاميرا عند الرفض -->
+                <div id="camera-blocked-notice" class="scanner-permission-overlay" style="display: none;">
+                    <div class="permission-icon-pulse error">
+                        <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <line x1="12" y1="8" x2="12" y2="12"></line>
+                            <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                        </svg>
+                    </div>
+                    <h4 class="permission-title">تم حظر إذن الكاميرا</h4>
+                    <p class="permission-subtitle">
+                        يرجى تفعيل صلاحية الكاميرا من إعدادات المتصفح لمتابعة رصد النقاط في المخبر.
+                    </p>
+                    <button type="button" id="btn-retry-camera" class="btn-activate-camera error">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="1 4 1 10 7 10"></polyline>
+                            <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path>
+                        </svg>
+                        <span>إعادة طلب الإذن</span>
+                    </button>
+                </div>
+
+                <div id="reader"></div>
+                <div class="scanner-overlay-laser" id="scanner-laser" style="display: none;"></div>
+            </div>
+
+            <div class="scanner-controls-bar">
+                <span id="scanner-status-text">الكاميرا بانتظار إذن التشغيل</span>
+                <div style="display: flex; gap: 8px;">
+                    <button class="btn-icon" id="btn-toggle-camera" title="إيقاف / تشغيل الكاميرا">
+                        <svg id="icon-cam-toggle" width="17" height="17" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z">
+                            </path>
+                            <circle cx="12" cy="13" r="4"></circle>
+                        </svg>
+                    </button>
+                    <button class="btn-icon torch-btn" id="btn-torch" title="تشغيل / إيقاف الفلاش">
+                        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+                        </svg>
+                    </button>
+                    <button class="btn-icon" id="btn-switch-cam" title="تبديل الكاميرا">
+                        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M23 4v6h-6"></path>
+                            <path d="M1 20v-6h6"></path>
+                            <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- شريط الإحصائيات الفورية (Stats Pill Bar) -->
+        <section class="stats-summary-card">
+            <div class="stat-item">
+                <span class="stat-val" id="stat-total">0</span>
+                <span class="stat-lbl">المسجلين</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-val" id="stat-avg">--</span>
+                <span class="stat-lbl">المعدل</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-val" id="stat-max">--</span>
+                <span class="stat-lbl">أعلى علامة</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-val" id="stat-pass">0%</span>
+                <span class="stat-lbl">نسبة ≥ 10</span>
+            </div>
+        </section>
+
+        <!-- أزرار التصفية حسب الأقسام (Class Filter Tabs) -->
+        <section class="class-filter-container" id="class-filters">
+            <!-- يُملأ ديناميكياً بواسطة JavaScript -->
+        </section>
+
+        <!-- أزرار التصدير (Export Actions: Excel & CSV) -->
+        <section class="action-buttons-group">
+            <button class="btn-primary-action" id="btn-export-xlsx">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                    <polyline points="14 2 14 8 20 8"></polyline>
+                    <line x1="16" y1="13" x2="8" y2="13"></line>
+                    <line x1="16" y1="17" x2="8" y2="17"></line>
+                    <polyline points="10 9 9 9 8 9"></polyline>
+                </svg>
+                <span>تصدير XLSX</span>
+            </button>
+
+            <button class="btn-secondary-action" id="btn-export-csv">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                    <polyline points="7 10 12 15 17 10"></polyline>
+                    <line x1="12" y1="15" x2="12" y2="3"></line>
+                </svg>
+                <span>تصدير CSV</span>
+            </button>
+        </section>
+
+        <!-- جدول رصد النتائج (Results Table Card) -->
+        <section class="table-card">
+            <div class="table-card-header">
+                <h3>جدول النقاط المرصودة</h3>
+                <div class="search-input-wrap">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="11" cy="11" r="8"></circle>
+                        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                    </svg>
+                    <input type="text" id="search-input" placeholder="بحث باسم أو قسم...">
+                </div>
+            </div>
+
+            <div class="table-responsive" style="margin: 0;">
+                <table class="custom-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 34px;">#</th>
+                            <th>الاسم واللقب</th>
+                            <th>القسم</th>
+                            <th>العلامة / 20</th>
+                            <th style="width: 40px; text-align: center;">حذف</th>
+                        </tr>
+                    </thead>
+                    <tbody id="table-results-body">
+                        <!-- تُعرض النتائج المرتبة هنا -->
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- حالة الجدول الفارغ -->
+            <div id="table-empty-state" class="table-empty-state">
+                <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                    <circle cx="12" cy="14" r="3"></circle>
+                </svg>
+                <p style="margin: 0; font-size: 0.88rem; font-weight: 600;">لا توجد نقاط مسجلة بعد</p>
+                <span style="font-size: 0.78rem;">وجّه كاميرا الهاتف نحو كود QR التلميذ للبدء فوراً</span>
+            </div>
+        </section>
+
+    </div>
+
+    <!-- نافذة الإدخال اليدوي البديل (Modal) -->
+    <div class="modal fade" id="manualAddModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content custom-modal-card">
+                <div class="modal-header">
+                    <h5 class="modal-title">تسجيل نقطة يدوياً</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form id="manual-add-form">
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label class="form-label">الاسم واللقب الكامل</label>
+                            <input type="text" id="manual-name" class="form-control" placeholder="مثال: بورقي رحيم"
+                                required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">القسم</label>
+                            <input type="text" id="manual-class" class="form-control" placeholder="مثال: 1ع2" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">العلامة (من 20)</label>
+                            <input type="number" id="manual-score" class="form-control" step="0.25" min="0" max="20"
+                                placeholder="مثال: 18" required>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary-dialog" data-bs-dismiss="modal">إلغاء</button>
+                        <button type="submit" class="btn btn-primary-dialog">حفظ النقطة</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- نافذة التأكيد والتنبيهات المخصصة والمصممة بالكامل (Styled Custom Dialog Pop-up) -->
+    <div class="modal fade" id="appCustomDialog" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-sm">
+            <div class="modal-content custom-dialog-card">
+                <div class="custom-dialog-icon-wrap" id="custom-dialog-icon-wrap">
+                    <svg id="custom-dialog-icon" width="30" height="30" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path
+                            d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z">
+                        </path>
+                        <line x1="12" y1="9" x2="12" y2="13"></line>
+                        <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                    </svg>
+                </div>
+                <h4 class="custom-dialog-title" id="custom-dialog-title">تأكيد الإجراء</h4>
+                <p class="custom-dialog-message" id="custom-dialog-message">هل أنت متأكد من تنفيذ هذا الإجراء؟</p>
+                <div class="custom-dialog-actions">
+                    <button type="button" class="btn btn-dialog-action" id="custom-dialog-confirm-btn">تأكيد</button>
+                    <button type="button" class="btn btn-dialog-cancel" id="custom-dialog-cancel-btn">إلغاء</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- نافذة تأكيد نجاح المسح والتوقف حتى الضغط على متابعة (Scan Success Pop-up Modal) -->
+    <div class="modal fade" id="scanSuccessModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+        <div class="modal-dialog modal-dialog-centered modal-sm">
+            <div class="modal-content scan-pop-card success">
+                <div class="scan-pop-icon-animated">
+                    <svg class="checkmark-svg" viewBox="0 0 52 52">
+                        <circle class="checkmark-circle" cx="26" cy="26" r="23" fill="none" />
+                        <path class="checkmark-check" fill="none" d="M14.1 27.2l7.1 7.2 16.7-16.8" />
+                    </svg>
+                </div>
+                <h3 class="scan-pop-title">تم المسح بنجاح!</h3>
+                <p class="scan-pop-subtitle">تم تسجيل وتثبيت نقطة التلميذ</p>
+
+                <div class="scan-pop-info-card">
+                    <div class="scan-pop-student-name" id="success-student-name">أحمد بن علي</div>
+                    <div class="scan-pop-badges">
+                        <span class="scan-pop-badge-class" id="success-student-class">1ع1</span>
+                        <span class="scan-pop-badge-score pass" id="success-student-score">18 / 20</span>
+                    </div>
+                </div>
+
+                <div class="scan-pop-actions">
+                    <button type="button" class="btn btn-scan-next" id="btn-scan-next">
+                        <span>مسح التالي (OK)</span>
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="9 18 15 12 9 6"></polyline>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- نافذة تنبيه المسح المكرر (Duplicate Scan Alert Modal) -->
+    <div class="modal fade" id="scanDuplicateModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+        <div class="modal-dialog modal-dialog-centered modal-sm">
+            <div class="modal-content scan-pop-card duplicate">
+                <div class="scan-pop-icon-warning">
+                    <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <path
+                            d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z">
+                        </path>
+                        <line x1="12" y1="9" x2="12" y2="13"></line>
+                        <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                    </svg>
+                </div>
+                <h3 class="scan-pop-title warning">التلميذ مسجل مسبقاً!</h3>
+                <p class="scan-pop-subtitle">هذا الرمز تم قراءته وإدراجه في الجدول</p>
+
+                <div class="scan-pop-info-card">
+                    <div class="scan-pop-student-name" id="dup-student-name">أحمد بن علي</div>
+                    <div class="scan-pop-badges">
+                        <span class="scan-pop-badge-class" id="dup-student-class">1ع1</span>
+                        <span class="scan-pop-badge-score" id="dup-student-score">18 / 20</span>
+                    </div>
+                </div>
+
+                <div class="scan-pop-actions">
+                    <button type="button" class="btn btn-scan-resume" id="btn-dup-resume">
+                        <span>متابعة المسح (OK)</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- إشعار التنبيه العائم (Toast Notification) -->
+    <div id="app-toast" class="toast-notice"></div>
+
+    <!-- المكاتب المساعدة محلياً للأوفلاين (Local Vendored Dependencies) -->
+    <script src="js/html5-qrcode.min.js?v=20261023.2"></script>
+    <script src="js/xlsx.full.min.js?v=20261023.2"></script>
+
+    <!-- كود التطبيق الأساسي المنفصل -->
+    <script src="js/app.js?v=20261023.2"></script>
+
+</body>
+
+</html>

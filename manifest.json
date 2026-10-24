@@ -1,8 +1,10 @@
 {
-  "name": "ماسح النقاط الآلي",
-  "short_name": "ماسح النقاط",
+  "name": "ScanSheet - ماسح النقاط الآلي",
+  "short_name": "ScanSheet",
   "description": "تطبيق PWA خفيف للمسح السريع لنقاط الفروض والامتحانات أوفلاين في المخبر",
-  "start_url": "./index.html",
+  "id": "/",
+  "start_url": "./",
+  "scope": "./",
   "display": "standalone",
   "orientation": "portrait-primary",
   "background_color": "#0f172a",

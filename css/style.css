@@ -3,7 +3,7 @@
    ========================================================================== */
 
 :root {
-  --font-sans: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans Arabic", "Geeza Pro", "Helvetica Neue", Arial, sans-serif;
   
   /* Primary Emerald Palette (Zero Purple) */
   --primary: #059669;

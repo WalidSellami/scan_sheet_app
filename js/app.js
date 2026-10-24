@@ -134,8 +134,14 @@ document.addEventListener('DOMContentLoaded', () => {
 // PWA Service Worker Registration
 function registerServiceWorker() {
   if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('./sw.js?v=20261023.2')
-      .then(reg => console.log('ServiceWorker registered:', reg.scope))
+    navigator.serviceWorker.register('./sw.js?v=20261024', { scope: './' })
+      .then(reg => {
+        console.log('ServiceWorker registered successfully:', reg.scope);
+        // Prompt service worker update if new version found
+        if (reg.waiting) {
+          reg.waiting.postMessage({ type: 'SKIP_WAITING' });
+        }
+      })
       .catch(err => console.warn('ServiceWorker registration error:', err));
   }
 }

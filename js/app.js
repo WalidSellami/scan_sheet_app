@@ -969,7 +969,7 @@ function exportCSV() {
   a.click();
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
-  showToast('تم تحميل ملف CSV (مرتب تصاعدياً أ-ي) بنجاح 📊', 'success');
+  showToast('تم تحميل ملف CSV بنجاح', 'success');
 }
 
 // Export to XLSX (Excel) with a separate Sheet for each class (Sorted alphabetically: أ -> ي)
@@ -1039,7 +1039,7 @@ function exportXLSX() {
 
   const filename = `نقاط_الفروض_الأقسام_${formatDateForFilename()}.xlsx`;
   XLSX.writeFile(wb, filename);
-  showToast('تم تصدير ملف Excel (مرتب تصاعدياً أ-ي) 📗', 'success');
+  showToast('تم تصدير ملف Excel بنجاح', 'success');
 }
 
 function formatDateForFilename() {

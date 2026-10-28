@@ -156,7 +156,7 @@ document.addEventListener('DOMContentLoaded', () => {
 // PWA Service Worker Registration
 function registerServiceWorker() {
   if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('./sw.js?v=20261024.5', { scope: '/' })
+    navigator.serviceWorker.register('./sw.js?v=20261028', { scope: '/' })
       .then(reg => {
         console.log('ServiceWorker registered successfully:', reg.scope);
         if (reg.waiting) {
@@ -257,7 +257,7 @@ function saveData() {
   localStorage.setItem('pwa_scanned_students', JSON.stringify(scannedStudents));
 }
 
-// Sorting logic: Highest mark first; if equal, alphabetical by full name
+// Sorting logic for UI dashboard: Highest mark first; if equal, alphabetical by full name
 function getSortedStudents(list) {
   return [...list].sort((a, b) => {
     const scoreDiff = parseFloat(b.score) - parseFloat(a.score);
@@ -265,6 +265,19 @@ function getSortedStudents(list) {
       return scoreDiff;
     }
     return (a.fullName || '').localeCompare(b.fullName || '', 'ar');
+  });
+}
+
+// Export Sorting Logic: Full Name in Arabic Ascending Order (أ -> ي)
+function getExportSortedStudents(list) {
+  return [...list].sort((a, b) => {
+    const nameA = (a.fullName || '').trim();
+    const nameB = (b.fullName || '').trim();
+    const nameDiff = nameA.localeCompare(nameB, 'ar');
+    if (nameDiff !== 0) {
+      return nameDiff;
+    }
+    return parseFloat(b.score) - parseFloat(a.score);
   });
 }
 
@@ -926,16 +939,18 @@ function clearAllStudents() {
   });
 }
 
-// Export to CSV with Arabic UTF-8 BOM
+// Export to CSV with Arabic UTF-8 BOM (Sorted alphabetically by Full Name: أ -> ي)
 function exportCSV() {
   if (scannedStudents.length === 0) {
     showToast('لا توجد بيانات أو نتائج لتصديرها بعد', 'warning');
     return;
   }
 
-  const list = activeClassFilter === 'ALL'
-    ? getSortedStudents(scannedStudents)
-    : getSortedStudents(scannedStudents.filter(s => s.className === activeClassFilter));
+  const rawList = activeClassFilter === 'ALL'
+    ? scannedStudents
+    : scannedStudents.filter(s => s.className === activeClassFilter);
+
+  const list = getExportSortedStudents(rawList);
 
   let csv = '\uFEFFالرقم,الاسم واللقب,القسم,العلامة / 20,الحالة,وقت التسجيل,تاريخ المسح\n';
 
@@ -954,10 +969,10 @@ function exportCSV() {
   a.click();
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
-  showToast('تم تحميل ملف CSV بنجاح 📊', 'success');
+  showToast('تم تحميل ملف CSV (مرتب تصاعدياً أ-ي) بنجاح 📊', 'success');
 }
 
-// Export to XLSX (Excel) with a separate Sheet for each class
+// Export to XLSX (Excel) with a separate Sheet for each class (Sorted alphabetically: أ -> ي)
 function exportXLSX() {
   if (typeof XLSX === 'undefined') {
     showToast('مكتبة Excel غير جاهزة', 'warning');
@@ -977,7 +992,8 @@ function exportXLSX() {
       ['الرقم', 'الاسم واللقب', 'القسم', 'العلامة / 20', 'التقدير', 'وقت التسجيل']
     ];
 
-    const sorted = getSortedStudents(studentsList);
+    // Order results by full name Ascending Order (ترتيب تصاعدي أ -> ي)
+    const sorted = getExportSortedStudents(studentsList);
     sorted.forEach((s, idx) => {
       const status = s.score >= 10 ? 'ناجح' : 'مستدرك';
       rows.push([idx + 1, s.fullName, s.className, s.score, status, s.timestamp]);
@@ -1023,7 +1039,7 @@ function exportXLSX() {
 
   const filename = `نقاط_الفروض_الأقسام_${formatDateForFilename()}.xlsx`;
   XLSX.writeFile(wb, filename);
-  showToast('تم تصدير ملف Excel (ورقة عمل منفصلة لكل قسم) 📗', 'success');
+  showToast('تم تصدير ملف Excel (مرتب تصاعدياً أ-ي) 📗', 'success');
 }
 
 function formatDateForFilename() {

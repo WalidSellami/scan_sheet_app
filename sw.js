@@ -1,4 +1,4 @@
-const CACHE_NAME = 'scan-sheet-pwa-v9';
+const CACHE_NAME = 'scan-sheet-pwa-v10';
 const ASSETS_TO_CACHE = [
   './',
   './manifest.json',
@@ -21,7 +21,7 @@ self.addEventListener('message', (event) => {
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then(async (cache) => {
-      console.log('[ServiceWorker] Caching app shell v9');
+      console.log('[ServiceWorker] Caching app shell v10');
       await Promise.all(
         ASSETS_TO_CACHE.map(async (url) => {
           try {

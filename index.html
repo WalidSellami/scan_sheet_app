@@ -30,13 +30,13 @@
     </script>
 
     <!-- PWA Manifest & App Icons -->
-    <link rel="manifest" href="manifest.json?v=20261028">
-    <link rel="icon" type="image/svg+xml" href="icons/icon.svg?v=20261028">
-    <link rel="apple-touch-icon" href="icons/icon.svg?v=20261028">
+    <link rel="manifest" href="manifest.json?v=20261107">
+    <link rel="icon" type="image/svg+xml" href="icons/icon.svg?v=20261107">
+    <link rel="apple-touch-icon" href="icons/icon.svg?v=20261107">
 
     <!-- Stylesheets (Separated & Offline-Ready) -->
-    <link rel="stylesheet" href="css/bootstrap.rtl.min.css?v=20261028">
-    <link rel="stylesheet" href="css/style.css?v=20261028">
+    <link rel="stylesheet" href="css/bootstrap.rtl.min.css?v=20261107">
+    <link rel="stylesheet" href="css/style.css?v=20261107">
 </head>
 
 <body>
@@ -297,7 +297,7 @@
                             <th>الاسم واللقب</th>
                             <th>القسم</th>
                             <th>العلامة / 20</th>
-                            <th style="width: 40px; text-align: center;">حذف</th>
+                            <th style="width: 76px; text-align: center;">إجراءات</th>
                         </tr>
                     </thead>
                     <tbody id="table-results-body">
@@ -348,6 +348,64 @@
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary-dialog" data-bs-dismiss="modal">إلغاء</button>
                         <button type="submit" class="btn btn-primary-dialog">حفظ النقطة</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- نافذة التعديل السريع للنقطة والبيانات (Quick Edit Modal) -->
+    <div class="modal fade" id="editStudentModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content custom-modal-card">
+                <div class="modal-header">
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="edit-modal-icon">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                            </svg>
+                        </span>
+                        <h5 class="modal-title">تعديل بيانات التلميذ</h5>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form id="edit-student-form">
+                    <input type="hidden" id="edit-student-id">
+                    <div class="modal-body">
+                        <!-- التحكم السريع بالعلامة (Fast UX Stepper) -->
+                        <div class="mb-3">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <label class="form-label mb-0" for="edit-score">العلامة (من 20)</label>
+                                <span class="badge-score-subtle" id="edit-score-status"></span>
+                            </div>
+                            <div class="score-quick-stepper">
+                                <button type="button" class="btn-stepper minus" id="btn-score-minus" title="إنقاص نصف نقطة">-0.5</button>
+                                <button type="button" class="btn-stepper minus" id="btn-score-minus-quarter" title="إنقاص ربع نقطة">-0.25</button>
+                                <input type="number" id="edit-score" class="form-control form-control-score-large text-center" step="0.25" min="0" max="20" placeholder="18" required>
+                                <button type="button" class="btn-stepper plus" id="btn-score-plus-quarter" title="زيادة ربع نقطة">+0.25</button>
+                                <button type="button" class="btn-stepper plus" id="btn-score-plus" title="زيادة نصف نقطة">+0.5</button>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label" for="edit-name">الاسم واللقب الكامل</label>
+                            <input type="text" id="edit-name" class="form-control" placeholder="اسم التلميذ" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label" for="edit-class">القسم</label>
+                            <input type="text" id="edit-class" class="form-control" placeholder="مثال: 1ع1" required>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary-dialog" data-bs-dismiss="modal">إلغاء</button>
+                        <button type="submit" class="btn btn-primary-dialog">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="20 6 9 17 4 12"></polyline>
+                            </svg>
+                            <span>حفظ التعديلات</span>
+                        </button>
                     </div>
                 </form>
             </div>
@@ -407,6 +465,13 @@
                             <polyline points="9 18 15 12 9 6"></polyline>
                         </svg>
                     </button>
+                    <button type="button" class="btn btn-scan-edit" id="btn-success-edit">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                        </svg>
+                        <span>تعديل النقطة أو البيانات</span>
+                    </button>
                 </div>
             </div>
         </div>
@@ -450,11 +515,11 @@
     <div id="app-toast" class="toast-notice"></div>
 
     <!-- المكاتب المساعدة محلياً للأوفلاين (Local Vendored Dependencies) -->
-    <script src="js/html5-qrcode.min.js?v=20261028"></script>
-    <script src="js/xlsx.full.min.js?v=20261028"></script>
+    <script src="js/html5-qrcode.min.js?v=20261107"></script>
+    <script src="js/xlsx.full.min.js?v=20261107"></script>
 
     <!-- كود التطبيق الأساسي المنفصل -->
-    <script src="js/app.js?v=20261028"></script>
+    <script src="js/app.js?v=20261107"></script>
 
 </body>
 

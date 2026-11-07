@@ -12,6 +12,9 @@ let availableCameras = [];
 let isTorchOn = false;
 let activeClassFilter = 'ALL';
 let isScanning = false;
+let latestScannedRecord = null;
+let currentEditingStudentId = null;
+let isEditingFromScanSuccess = false;
 
 // Audio Synthesizer Context (Web Audio API - Zero external files)
 let audioCtx = null;
@@ -156,7 +159,7 @@ document.addEventListener('DOMContentLoaded', () => {
 // PWA Service Worker Registration
 function registerServiceWorker() {
   if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('./sw.js?v=20261028', { scope: '/' })
+    navigator.serviceWorker.register('./sw.js?v=20261107', { scope: '/' })
       .then(reg => {
         console.log('ServiceWorker registered successfully:', reg.scope);
         if (reg.waiting) {
@@ -445,6 +448,7 @@ function handleDecodedData(decodedText) {
 
 // Show Pop-up on Scan Success and Pause Scanner
 function showScanSuccessModal(record) {
+  latestScannedRecord = record;
   const nameEl = document.getElementById('success-student-name');
   const classEl = document.getElementById('success-student-class');
   const scoreEl = document.getElementById('success-student-score');
@@ -863,24 +867,32 @@ function renderTable() {
       <tr>
         <td style="color: var(--text-muted); font-weight: bold; width: 34px;">${index + 1}</td>
         <td>
-          <div class="student-name-cell">
+          <div class="student-name-cell clickable-name" data-id="${std.id}" title="اضغط للتعديل السريع">
             ${escapeHtml(std.fullName)}
           </div>
           <span class="student-time-sub">${std.timestamp}</span>
         </td>
         <td><span class="class-badge">${escapeHtml(std.className)}</span></td>
         <td>
-          <span class="badge-score ${badgeClass}" title="${statusText}">
+          <span class="badge-score ${badgeClass} clickable-score" data-id="${std.id}" title="${statusText} (اضغط للتعديل السريع)">
             ${std.score}
           </span>
         </td>
-        <td style="width: 40px; text-align: center;">
-          <button class="btn-delete-row" data-id="${std.id}" title="حذف السطر">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <polyline points="3 6 5 6 21 6"></polyline>
-              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-            </svg>
-          </button>
+        <td style="width: 76px; text-align: center;">
+          <div class="row-actions-wrap">
+            <button class="btn-edit-row" data-id="${std.id}" title="تعديل النقطة أو البيانات">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+              </svg>
+            </button>
+            <button class="btn-delete-row" data-id="${std.id}" title="حذف السطر">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="3 6 5 6 21 6"></polyline>
+                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+              </svg>
+            </button>
+          </div>
         </td>
       </tr>
     `;
@@ -892,8 +904,26 @@ function renderTable() {
     // Attach row delete handlers
     tbody.querySelectorAll('.btn-delete-row').forEach(btn => {
       btn.addEventListener('click', (e) => {
+        e.stopPropagation();
         const id = btn.getAttribute('data-id');
         deleteStudent(id);
+      });
+    });
+
+    // Attach row edit handlers
+    tbody.querySelectorAll('.btn-edit-row').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const id = btn.getAttribute('data-id');
+        openEditStudentModal(id, false);
+      });
+    });
+
+    // Fast UX: Click directly on score badge or student name to edit
+    tbody.querySelectorAll('.clickable-score, .clickable-name').forEach(el => {
+      el.addEventListener('click', (e) => {
+        const id = el.getAttribute('data-id');
+        if (id) openEditStudentModal(id, false);
       });
     });
   }
@@ -916,6 +946,119 @@ function deleteStudent(id) {
       showToast(`تم حذف نقطة ${item.fullName}`, 'info');
     }
   });
+}
+
+// Quick Edit Modal Handlers (Fast UX)
+function openEditStudentModal(id, fromScanSuccess = false) {
+  const student = scannedStudents.find(s => s.id === id);
+  if (!student) return;
+
+  currentEditingStudentId = id;
+  isEditingFromScanSuccess = fromScanSuccess;
+
+  // If opened directly from scanSuccessModal, close it cleanly without resuming scanner yet
+  if (fromScanSuccess) {
+    const successModal = document.getElementById('scanSuccessModal');
+    if (successModal) {
+      successModal.style.display = 'none';
+      successModal.classList.remove('show');
+      successModal.setAttribute('aria-hidden', 'true');
+    }
+  }
+
+  const idInput = document.getElementById('edit-student-id');
+  const nameInput = document.getElementById('edit-name');
+  const classInput = document.getElementById('edit-class');
+  const scoreInput = document.getElementById('edit-score');
+
+  if (idInput) idInput.value = student.id;
+  if (nameInput) nameInput.value = student.fullName || '';
+  if (classInput) classInput.value = student.className || '';
+  if (scoreInput) {
+    scoreInput.value = student.score;
+    updateEditScoreStatus(student.score);
+  }
+
+  openModal('editStudentModal');
+
+  // Fast UX: Auto-focus and select score for instant mobile edit
+  setTimeout(() => {
+    if (scoreInput) {
+      scoreInput.focus();
+      scoreInput.select();
+    }
+  }, 160);
+}
+
+function updateEditScoreStatus(val) {
+  const statusEl = document.getElementById('edit-score-status');
+  if (!statusEl) return;
+  const num = parseFloat(val);
+  if (isNaN(num)) {
+    statusEl.innerText = '';
+    statusEl.className = 'badge-score-subtle';
+    return;
+  }
+  const isPass = num >= 10;
+  statusEl.innerText = isPass ? 'ناجح' : 'مستدرك';
+  statusEl.className = `badge-score-subtle ${isPass ? 'pass' : 'fail'}`;
+}
+
+function stepEditScore(delta) {
+  const scoreInput = document.getElementById('edit-score');
+  if (!scoreInput) return;
+  let current = parseFloat(scoreInput.value);
+  if (isNaN(current)) current = 0;
+  let next = Math.round((current + delta) * 100) / 100;
+  if (next < 0) next = 0;
+  if (next > 20) next = 20;
+  scoreInput.value = next;
+  updateEditScoreStatus(next);
+  triggerVibrate(25); // Subtle tactile feedback
+}
+
+function saveStudentEdit() {
+  const idInput = document.getElementById('edit-student-id');
+  const nameInput = document.getElementById('edit-name');
+  const classInput = document.getElementById('edit-class');
+  const scoreInput = document.getElementById('edit-score');
+
+  const id = idInput ? idInput.value : '';
+  const newName = nameInput ? nameInput.value.trim() : '';
+  const newClass = classInput ? classInput.value.trim() : '';
+  const newScore = scoreInput ? parseFloat(scoreInput.value) : NaN;
+
+  if (!id || !newName || isNaN(newScore)) {
+    showToast('يرجى ملء جميع البيانات بشكل صحيح', 'warning');
+    return;
+  }
+
+  const clampedScore = Math.max(0, Math.min(20, Math.round(newScore * 100) / 100));
+
+  const index = scannedStudents.findIndex(s => s.id === id);
+  if (index === -1) {
+    showToast('لم يتم العثور على التلميذ في القائمة', 'warning');
+    closeModal('editStudentModal');
+    return;
+  }
+
+  // Update in memory
+  scannedStudents[index].fullName = newName;
+  scannedStudents[index].className = newClass || 'عام';
+  scannedStudents[index].score = clampedScore;
+
+  saveData();
+  renderUI();
+  triggerVibrate(40);
+  closeModal('editStudentModal');
+
+  showToast(`تم تعديل نقطة ${newName} بنجاح (${clampedScore}/20)`, 'success');
+
+  // If edit was done immediately after scanning, resume camera for the next student
+  if (isEditingFromScanSuccess) {
+    isEditingFromScanSuccess = false;
+    resumeScanningAfterSuccess();
+  }
 }
 
 function clearAllStudents() {
@@ -1135,6 +1278,42 @@ function setupEventListeners() {
     });
   }
 
+  // Scan Success Modal "تعديل البيانات" button (Immediate Fast UX Edit)
+  const successEditBtn = document.getElementById('btn-success-edit');
+  if (successEditBtn) {
+    successEditBtn.addEventListener('click', () => {
+      if (latestScannedRecord) {
+        openEditStudentModal(latestScannedRecord.id, true);
+      }
+    });
+  }
+
+  // Quick Edit Modal Form Submission & Steppers
+  const editForm = document.getElementById('edit-student-form');
+  if (editForm) {
+    editForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      saveStudentEdit();
+    });
+  }
+
+  const editScoreInput = document.getElementById('edit-score');
+  if (editScoreInput) {
+    editScoreInput.addEventListener('input', (e) => {
+      updateEditScoreStatus(e.target.value);
+    });
+  }
+
+  const minusBtn = document.getElementById('btn-score-minus');
+  const minusQBtn = document.getElementById('btn-score-minus-quarter');
+  const plusQBtn = document.getElementById('btn-score-plus-quarter');
+  const plusBtn = document.getElementById('btn-score-plus');
+
+  if (minusBtn) minusBtn.addEventListener('click', () => stepEditScore(-0.5));
+  if (minusQBtn) minusQBtn.addEventListener('click', () => stepEditScore(-0.25));
+  if (plusQBtn) plusQBtn.addEventListener('click', () => stepEditScore(0.25));
+  if (plusBtn) plusBtn.addEventListener('click', () => stepEditScore(0.5));
+
   // Duplicate Scan Modal "OK / Resume" button
   const dupResumeBtn = document.getElementById('btn-dup-resume');
   if (dupResumeBtn) {
@@ -1190,8 +1369,9 @@ function closeModal(modalId) {
   const backdrop = document.querySelector('.modal-backdrop');
   if (backdrop) backdrop.remove();
 
-  // If scan pop-up was closed via backdrop, ensure camera resumes
-  if (modalId === 'scanSuccessModal' || modalId === 'scanDuplicateModal') {
+  // If scan pop-up or edit modal from scan was closed via backdrop or cancel, ensure camera resumes
+  if (modalId === 'scanSuccessModal' || modalId === 'scanDuplicateModal' || (modalId === 'editStudentModal' && isEditingFromScanSuccess)) {
+    isEditingFromScanSuccess = false;
     const laser = document.getElementById('scanner-laser');
     if (laser) laser.style.display = 'block';
     if (html5QrCode && isScanning) {

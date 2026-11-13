@@ -159,7 +159,7 @@ document.addEventListener('DOMContentLoaded', () => {
 // PWA Service Worker Registration
 function registerServiceWorker() {
   if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('./sw.js?v=20261107', { scope: '/' })
+    navigator.serviceWorker.register('./sw.js?v=1794575728606', { scope: '/' })
       .then(reg => {
         console.log('ServiceWorker registered successfully:', reg.scope);
         if (reg.waiting) {
